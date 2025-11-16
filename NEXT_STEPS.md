@@ -1,7 +1,27 @@
 # VIB3 Light Lab - Next Steps
 
 **Current Status**: Phases 1-3 Complete (30%)
-**Focus**: Get vib3-plus-engine integrated and working
+**Focus**: Integrate vib3-plus-engine (CONFIRMED best choice)
+
+---
+
+## ✅ **ARCHITECTURE DECISION: vib3-plus-engine**
+
+**Repository**: https://github.com/Domusgpt/vib3-plus-engine/tree/docs-comprehensive-documentation
+
+**Why This Choice**:
+- Purpose-built VJ visualization tool with audio reactivity
+- 4 rendering systems (Faceted, Quantum, Holographic, Polychora)
+- 96 geometries (24 per system)
+- State management, presets, gallery system
+- Touch-optimized, 60fps desktop / 30-45fps mobile
+- Complete web app ready for WebView integration
+
+**WebView + JS Bridge = CORRECT APPROACH**:
+- Both vib3-plus-engine and SDK are web-based (no native Dart)
+- Current architecture (InAppWebView + JavaScript bridge) is optimal
+- Industry standard for VJ/visualization apps
+- < 16ms latency achievable (perfect for 60fps)
 
 ---
 
@@ -9,19 +29,44 @@
 
 ### 1. Bundle vib3-plus-engine Assets
 
-**What we need from vib3-plus-engine**:
+**Source Repository**: https://github.com/Domusgpt/vib3-plus-engine
+
+**What we need**:
 ```
 assets/webgl/
-├── index.html              # Main engine file
-├── vib3-engine.js          # Core engine code
-└── [any other dependencies]
+├── index.html              # Main entry point
+├── js/                     # Core engine files
+│   ├── core/              # 12 engine files (app.js, state-manager.js, etc.)
+│   ├── audio/             # Audio processing
+│   ├── controls/          # Input management
+│   ├── gallery/           # Gallery system
+│   ├── geometry/          # 4D mathematics
+│   └── ui/                # UI components
+├── src/                   # Additional engine files
+│   ├── core/              # 19 engine files (Engine.js, VIB3Engine.js)
+│   ├── faceted/           # Faceted rendering system
+│   ├── quantum/           # Quantum rendering system
+│   ├── holograms/         # Holographic rendering system
+│   └── [other systems]
+└── styles/                # CSS modules
 ```
 
 **Steps**:
-1. Get vib3-plus-engine source from https://domusgpt.github.io/vib3-plus-engine/
-2. Copy necessary files to `assets/webgl/`
-3. Update `webgl_canvas.dart` to load from assets instead of embedded HTML
-4. Test that engine initializes
+1. Clone vib3-plus-engine repository:
+   ```bash
+   cd /tmp
+   gh repo clone Domusgpt/vib3-plus-engine
+   cd vib3-plus-engine
+   gh pr checkout docs-comprehensive-documentation
+   ```
+
+2. Copy to Flutter project:
+   ```bash
+   cp -r * /mnt/c/Users/millz/projection-vib3/assets/webgl/
+   ```
+
+3. Update `webgl_canvas.dart` to load from assets
+4. Test that engine initializes with all 3 systems
 
 ### 2. Configure 3 Core Systems
 
