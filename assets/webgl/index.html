@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VIB3 Light Lab WebGL Engine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            background: #000;
+            touch-action: none;
+        }
+        canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="glCanvas"></canvas>
+
+    <script id="vertexShader" type="x-shader/x-vertex">
+        attribute vec4 aVertexPosition;
+        attribute vec2 aTextureCoord;
+
+        varying highp vec2 vTextureCoord;
+
+        void main(void) {
+            gl_Position = aVertexPosition;
+            vTextureCoord = aTextureCoord;
+        }
+    </script>
+
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        precision highp float;
+
+        varying highp vec2 vTextureCoord;
+
+        // VIB3 Parameters (synced from Flutter)
+        uniform float uTime;
+        uniform vec2 uResolution;
+
+        // Rotation (6 planes)
+        uniform float uRotXY;
+        uniform float uRotXZ;
+        uniform float uRotYZ;
+        uniform float uRotXW;
+        uniform float uRotYW;
+        uniform float uRotZW;
+
+        // Visual
+        uniform float uGridDensity;
+        uniform float uMorphFactor;
+        uniform float uChaos;
+        uniform float uSpeed;
+
+        // Color
+        uniform float uHue;
+        uniform float uSaturation;
+        uniform float uIntensity;
+        uniform vec3 uColor1;
+        uniform vec3 uColor2;
+        uniform vec3 uColor3;
+        uniform vec3 uColor4;
+
+        // Effects
+        uniform float uCardBendAmount;
+        uniform vec3 uCardBendAxis;
+        uniform float uPerspectiveFOV;
+        uniform float uBloom;
+        uniform float uChromaticAberration;
+        uniform vec3 uRGBShift;
+
+        // Camera
+        uniform vec3 uCameraPosition;
+        uniform float uCameraFOV;
+
+        // Audio (7 bands)
+        uniform float uAudioSub;
+        uniform float uAudioBass;
+        uniform float uAudioLowMid;
+        uniform float uAudioMid;
+        uniform float uAudioHighMid;
+        uniform float uAudioPresence;
+        uniform float uAudioAir;
+
+        // Lighting
+        uniform vec3 uKeyLightColor;
+        uniform float uKeyLightIntensity;
+        uniform vec3 uFillLightColor;
+        uniform float uFillLightIntensity;
+        uniform vec3 uBackLightColor;
+        uniform float uBackLightIntensity;
+        uniform vec3 uAmbientColor;
+        uniform float uAmbientIntensity;
+
+        // 4D Rotation Matrix
+        mat4 rotateXY(float angle) {
+            float c = cos(angle);
+            float s = sin(angle);
+            return mat4(
+                c, -s, 0, 0,
+                s, c, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            );
+        }
+
+        mat4 rotateXZ(float angle) {
+            float c = cos(angle);
+            float s = sin(angle);
+            return mat4(
+                c, 0, -s, 0,
+                0, 1, 0, 0,
+                s, 0, c, 0,
+                0, 0, 0, 1
+            );
+        }
+
+        mat4 rotateYZ(float angle) {
+            float c = cos(angle);
+            float s = sin(angle);
+            return mat4(
+                1, 0, 0, 0,
+                0, c, -s, 0,
+                0, s, c, 0,
+                0, 0, 0, 1
+            );
+        }
+
+        // 4D position after rotations
+        vec4 rotate4D(vec4 p) {
+            p = rotateXY(uRotXY) * p;
+            p = rotateXZ(uRotXZ) * p;
+            p = rotateYZ(uRotYZ) * p;
+
+            // Higher dimensional rotations (XW, YW, ZW)
+            float c = cos(uRotXW);
+            float s = sin(uRotXW);
+            p = vec4(
+                p.x * c - p.w * s,
+                p.y,
+                p.z,
+                p.x * s + p.w * c
+            );
+
+            c = cos(uRotYW);
+            s = sin(uRotYW);
+            p = vec4(
+                p.x,
+                p.y * c - p.w * s,
+                p.z,
+                p.y * s + p.w * c
+            );
+
+            c = cos(uRotZW);
+            s = sin(uRotZW);
+            p = vec4(
+                p.x,
+                p.y,
+                p.z * c - p.w * s,
+                p.z * s + p.w * c
+            );
+
+            return p;
+        }
+
+        // HSV to RGB
+        vec3 hsv2rgb(vec3 c) {
+            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+        }
+
+        // Main rendering function
+        void main(void) {
+            vec2 uv = (vTextureCoord * 2.0 - 1.0) * vec2(uResolution.x / uResolution.y, 1.0);
+
+            // Create 4D grid
+            float grid = uGridDensity * 10.0;
+            vec4 p4d = vec4(
+                uv.x * grid,
+                uv.y * grid,
+                sin(uTime * uSpeed * 0.5 + uv.x * 3.0) * uMorphFactor,
+                cos(uTime * uSpeed * 0.5 + uv.y * 3.0) * uMorphFactor
+            );
+
+            // Add chaos
+            p4d.xy += vec2(
+                sin(uTime * uSpeed + p4d.y * 2.0),
+                cos(uTime * uSpeed + p4d.x * 2.0)
+            ) * uChaos;
+
+            // Apply 4D rotations
+            p4d = rotate4D(p4d);
+
+            // Project to 3D (stereographic projection)
+            vec3 p3d = p4d.xyz / (2.0 - p4d.w);
+
+            // Apply camera
+            p3d -= uCameraPosition;
+
+            // Card bend effect
+            if (uCardBendAmount > 0.0) {
+                float bend = dot(p3d, uCardBendAxis) * uCardBendAmount;
+                p3d += uCardBendAxis * bend * bend;
+            }
+
+            // Calculate color based on position and audio
+            float audioEnergy = (uAudioBass + uAudioMid + uAudioHighMid) / 3.0;
+            float hue = mod(uHue + length(p3d) * 0.1 + audioEnergy * 0.3, 1.0);
+            vec3 baseColor = hsv2rgb(vec3(hue, uSaturation, uIntensity));
+
+            // Mix with palette colors
+            float paletteMix = fract(length(p4d) * 0.5 + uTime * 0.1);
+            vec3 paletteColor = mix(
+                mix(uColor1, uColor2, paletteMix),
+                mix(uColor3, uColor4, paletteMix),
+                sin(uTime * uSpeed * 0.3) * 0.5 + 0.5
+            );
+            baseColor = mix(baseColor, paletteColor, 0.5);
+
+            // Apply lighting
+            vec3 normal = normalize(p3d);
+            vec3 lighting =
+                uKeyLightColor * uKeyLightIntensity * max(0.0, dot(normal, normalize(vec3(1, 1, 0.5)))) +
+                uFillLightColor * uFillLightIntensity * max(0.0, dot(normal, normalize(vec3(-0.5, 0.5, 0.5)))) +
+                uBackLightColor * uBackLightIntensity * max(0.0, dot(normal, normalize(vec3(0, -1, -1)))) +
+                uAmbientColor * uAmbientIntensity;
+
+            vec3 finalColor = baseColor * (lighting + 0.2);
+
+            // Audio reactivity - add energy flashes
+            finalColor += vec3(uAudioSub * 0.3, uAudioMid * 0.3, uAudioAir * 0.3);
+
+            // Post-processing effects
+            if (uBloom > 0.0) {
+                finalColor += finalColor * uBloom * 0.5;
+            }
+
+            if (uChromaticAberration > 0.0) {
+                // Simple chromatic aberration simulation
+                finalColor.r += sin(length(uv) * 10.0) * uChromaticAberration * 0.1;
+                finalColor.b -= sin(length(uv) * 10.0) * uChromaticAberration * 0.1;
+            }
+
+            finalColor += uRGBShift * 0.1;
+
+            gl_FragColor = vec4(finalColor, 1.0);
+        }
+    </script>
+
+    <script>
+        // VIB3 WebGL Engine
+        class VIB3Engine {
+            constructor() {
+                this.canvas = document.getElementById('glCanvas');
+                this.gl = this.canvas.getContext('webgl', {
+                    alpha: false,
+                    antialias: true,
+                    preserveDrawingBuffer: false,
+                    powerPreference: 'high-performance'
+                });
+
+                if (!this.gl) {
+                    alert('WebGL not supported');
+                    return;
+                }
+
+                this.parameters = {};
+                this.startTime = Date.now();
+                this.touches = [];
+
+                this.initShaders();
+                this.initBuffers();
+                this.initParameters();
+                this.setupEventListeners();
+                this.resize();
+                this.animate();
+            }
+
+            initShaders() {
+                const vsSource = document.getElementById('vertexShader').textContent;
+                const fsSource = document.getElementById('fragmentShader').textContent;
+
+                const vertexShader = this.loadShader(this.gl.VERTEX_SHADER, vsSource);
+                const fragmentShader = this.loadShader(this.gl.FRAGMENT_SHADER, fsSource);
+
+                this.program = this.gl.createProgram();
+                this.gl.attachShader(this.program, vertexShader);
+                this.gl.attachShader(this.program, fragmentShader);
+                this.gl.linkProgram(this.program);
+
+                if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+                    console.error('Shader program failed to link:', this.gl.getProgramInfoLog(this.program));
+                    return;
+                }
+
+                this.gl.useProgram(this.program);
+            }
+
+            loadShader(type, source) {
+                const shader = this.gl.createShader(type);
+                this.gl.shaderSource(shader, source);
+                this.gl.compileShader(shader);
+
+                if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+                    console.error('Shader compilation error:', this.gl.getShaderInfoLog(shader));
+                    this.gl.deleteShader(shader);
+                    return null;
+                }
+
+                return shader;
+            }
+
+            initBuffers() {
+                const positions = new Float32Array([
+                    -1, -1,
+                     1, -1,
+                    -1,  1,
+                     1,  1,
+                ]);
+
+                const texCoords = new Float32Array([
+                    0, 0,
+                    1, 0,
+                    0, 1,
+                    1, 1,
+                ]);
+
+                this.positionBuffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, positions, this.gl.STATIC_DRAW);
+
+                this.texCoordBuffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texCoordBuffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, texCoords, this.gl.STATIC_DRAW);
+            }
+
+            initParameters() {
+                // Default parameter values
+                this.parameters = {
+                    uRotXY: 0.0,
+                    uRotXZ: 0.0,
+                    uRotYZ: 0.0,
+                    uRotXW: 0.0,
+                    uRotYW: 0.0,
+                    uRotZW: 0.0,
+                    uGridDensity: 5.0,
+                    uMorphFactor: 1.0,
+                    uChaos: 0.5,
+                    uSpeed: 1.0,
+                    uHue: 0.5,
+                    uSaturation: 0.8,
+                    uIntensity: 1.0,
+                    uColor1: [1.0, 0.5, 0.2],
+                    uColor2: [0.9, 0.3, 0.5],
+                    uColor3: [0.3, 0.6, 0.9],
+                    uColor4: [0.8, 0.2, 0.7],
+                    uCardBendAmount: 0.0,
+                    uCardBendAxis: [1.0, 0.0, 0.0],
+                    uPerspectiveFOV: 60.0,
+                    uBloom: 0.0,
+                    uChromaticAberration: 0.0,
+                    uRGBShift: [0.0, 0.0, 0.0],
+                    uCameraPosition: [0.0, 0.0, 5.0],
+                    uCameraFOV: 60.0,
+                    uAudioSub: 0.0,
+                    uAudioBass: 0.0,
+                    uAudioLowMid: 0.0,
+                    uAudioMid: 0.0,
+                    uAudioHighMid: 0.0,
+                    uAudioPresence: 0.0,
+                    uAudioAir: 0.0,
+                    uKeyLightColor: [1.0, 1.0, 1.0],
+                    uKeyLightIntensity: 1.0,
+                    uFillLightColor: [0.7, 0.7, 0.9],
+                    uFillLightIntensity: 0.5,
+                    uBackLightColor: [0.9, 0.9, 1.0],
+                    uBackLightIntensity: 0.3,
+                    uAmbientColor: [0.2, 0.2, 0.3],
+                    uAmbientIntensity: 0.2
+                };
+            }
+
+            setupEventListeners() {
+                window.addEventListener('resize', () => this.resize());
+
+                // Multi-touch tracking
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.touches = Array.from(e.touches);
+                    this.sendTouchCount(this.touches.length);
+                });
+
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    this.touches = Array.from(e.touches);
+                });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.touches = Array.from(e.touches);
+                    this.sendTouchCount(this.touches.length);
+                });
+            }
+
+            sendTouchCount(count) {
+                // Send to Flutter via JavaScript bridge
+                if (window.flutter_inappwebview) {
+                    window.flutter_inappwebview.callHandler('touchCount', count);
+                }
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            updateParameter(name, value) {
+                if (name in this.parameters) {
+                    this.parameters[name] = value;
+                }
+            }
+
+            updateParameters(params) {
+                Object.assign(this.parameters, params);
+            }
+
+            render() {
+                const gl = this.gl;
+                const time = (Date.now() - this.startTime) / 1000.0;
+
+                gl.clearColor(0, 0, 0, 1);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                gl.useProgram(this.program);
+
+                // Set vertex positions
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+                const positionLoc = gl.getAttribLocation(this.program, 'aVertexPosition');
+                gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(positionLoc);
+
+                // Set texture coordinates
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+                const texCoordLoc = gl.getAttribLocation(this.program, 'aTextureCoord');
+                gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(texCoordLoc);
+
+                // Set uniforms
+                this.setUniform('uTime', time);
+                this.setUniform('uResolution', [this.canvas.width, this.canvas.height]);
+
+                for (const [name, value] of Object.entries(this.parameters)) {
+                    this.setUniform(name, value);
+                }
+
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            }
+
+            setUniform(name, value) {
+                const location = this.gl.getUniformLocation(this.program, name);
+                if (!location) return;
+
+                if (Array.isArray(value)) {
+                    if (value.length === 2) {
+                        this.gl.uniform2fv(location, value);
+                    } else if (value.length === 3) {
+                        this.gl.uniform3fv(location, value);
+                    } else if (value.length === 4) {
+                        this.gl.uniform4fv(location, value);
+                    }
+                } else {
+                    this.gl.uniform1f(location, value);
+                }
+            }
+
+            animate() {
+                this.render();
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Initialize engine when page loads
+        let engine;
+        window.addEventListener('load', () => {
+            engine = new VIB3Engine();
+
+            // Expose to Flutter
+            window.vib3Engine = engine;
+
+            // Notify Flutter that engine is ready
+            if (window.flutter_inappwebview) {
+                window.flutter_inappwebview.callHandler('engineReady', true);
+            }
+        });
+    </script>
+</body>
+</html>

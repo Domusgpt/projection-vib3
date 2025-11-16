@@ -1,73 +1,95 @@
 import 'package:flutter/material.dart';
-import '../../utils/vib3_colors.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/engine_provider.dart';
+import '../../providers/audio_provider.dart';
+import '../../services/webgl_bridge.dart';
 
-/// WebGL Canvas Widget
-/// TODO: Integrate flutter_inappwebview to load vib3-plus-engine
-class WebGLCanvas extends StatelessWidget {
+/// WebGL Canvas Widget with InAppWebView integration
+class WebGLCanvas extends ConsumerStatefulWidget {
   const WebGLCanvas({super.key});
 
   @override
+  ConsumerState<WebGLCanvas> createState() => _WebGLCanvasState();
+}
+
+class _WebGLCanvasState extends ConsumerState<WebGLCanvas> {
+  InAppWebViewController? _webViewController;
+  WebGLBridge? _bridge;
+  bool _engineReady = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: RadialGradient(
-          colors: [
-            VIB3Colors.deepPurple.withOpacity(0.3),
-            VIB3Colors.darkNavy.withOpacity(0.8),
-            Colors.black,
-          ],
-          stops: [0.0, 0.5, 1.0],
-        ),
+    final engineState = ref.watch(engineProvider);
+    final audioState = ref.watch(audioProvider);
+
+    // Update parameters when engine is ready and state changes
+    if (_engineReady && _bridge != null) {
+      _bridge!.updateAllParameters(engineState.parameters);
+      _bridge!.updateAudioBands(
+        audioState.analyzer.subLevel,
+        audioState.analyzer.bassLevel,
+        audioState.analyzer.lowMidLevel,
+        audioState.analyzer.midLevel,
+        audioState.analyzer.highMidLevel,
+        audioState.analyzer.presenceLevel,
+        audioState.analyzer.airLevel,
+      );
+    }
+
+    return InAppWebView(
+      initialSettings: InAppWebViewSettings(
+        transparentBackground: true,
+        disableContextMenu: true,
+        supportZoom: false,
+        allowsInlineMediaPlayback: true,
+        mediaPlaybackRequiresUserGesture: false,
+        useHybridComposition: true,
+        hardwareAcceleration: true,
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.view_in_ar,
-              size: 80,
-              color: VIB3Colors.cyan.withOpacity(0.3),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'WebGL Canvas',
-              style: TextStyle(
-                fontSize: 24,
-                color: VIB3Colors.cyan.withOpacity(0.5),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              '4D Visualization Engine',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withOpacity(0.3),
-              ),
-            ),
-            SizedBox(height: 40),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: VIB3Colors.cyan.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: VIB3Colors.cyan.withOpacity(0.3),
-                ),
-              ),
-              child: Text(
-                'TODO: Integrate flutter_inappwebview',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: VIB3Colors.cyan.withOpacity(0.6),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+      initialFile: 'assets/webgl/index.html',
+      onWebViewCreated: (controller) {
+        _webViewController = controller;
+        _bridge = WebGLBridge(controller);
+
+        // Register JavaScript handlers
+        controller.addJavaScriptHandler(
+          handlerName: 'engineReady',
+          callback: (args) {
+            setState(() {
+              _engineReady = true;
+            });
+            print('VIB3 WebGL Engine ready');
+          },
+        );
+
+        controller.addJavaScriptHandler(
+          handlerName: 'touchCount',
+          callback: (args) {
+            if (args.isNotEmpty) {
+              final count = args[0] as int;
+              // This will be picked up by the MultiTouchFeedback overlay
+              print('Touch count: $count');
+            }
+          },
+        );
+      },
+      onConsoleMessage: (controller, consoleMessage) {
+        print('WebGL Console: ${consoleMessage.message}');
+      },
+      onLoadStop: (controller, url) {
+        print('WebGL page loaded: $url');
+      },
+      onLoadError: (controller, url, code, message) {
+        print('WebGL load error: $message');
+      },
     );
+  }
+
+  @override
+  void dispose() {
+    _bridge = null;
+    _webViewController = null;
+    super.dispose();
   }
 }

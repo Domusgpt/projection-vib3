@@ -5,6 +5,7 @@ import '../utils/vib3_theme.dart';
 import '../widgets/bezel/bezel_tab_bar.dart';
 import '../widgets/canvas/webgl_canvas.dart';
 import '../widgets/canvas/multi_touch_feedback.dart';
+import '../widgets/floating/floating_widgets_overlay.dart';
 import '../providers/audio_provider.dart';
 import '../providers/palette_provider.dart';
 import '../providers/camera_provider.dart';
@@ -91,8 +92,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     // Multi-touch border feedback
                     MultiTouchFeedback(fingerCount: _fingerCount),
 
-                    // Floating widgets would be positioned here
-                    // TODO: Implement floating widget system
+                    // Floating widgets overlay
+                    FloatingWidgetsOverlay(),
                   ],
                 ),
               ),
@@ -155,6 +156,18 @@ class _MainScreenState extends ConsumerState<MainScreen>
           ),
 
           Spacer(),
+
+          // Microphone toggle
+          IconButton(
+            icon: Icon(
+              audioState.isAudioActive ? Icons.mic : Icons.mic_off,
+              size: 20,
+              color: audioState.isAudioActive ? VIB3Colors.green : Colors.white.withOpacity(0.5),
+            ),
+            onPressed: () {
+              ref.read(audioProvider.notifier).toggleAudioActive();
+            },
+          ),
 
           // Gallery and Config buttons
           IconButton(

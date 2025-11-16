@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../utils/vib3_colors.dart';
 import '../../../utils/vib3_theme.dart';
+import '../../../utils/floating_widget_helper.dart';
 import '../../../providers/engine_provider.dart';
 import '../../../models/vib3_parameters.dart';
 
@@ -127,7 +128,15 @@ class RotationTab extends ConsumerWidget {
               _miniButton(
                 Icons.push_pin,
                 () {
-                  // TODO: Pull out as floating widget
+                  // Pull out as floating widget
+                  FloatingWidgetHelper.pullOutWidget(
+                    ref: ref,
+                    id: 'rotation_$label',
+                    title: 'Rotation $label',
+                    category: VIB3ControlCategory.rotation,
+                    content: _buildFloatingRotationContent(ref, label, param),
+                    size: const Size(280, 350),
+                  );
                 },
               ),
               SizedBox(width: 4),
@@ -141,6 +150,93 @@ class RotationTab extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFloatingRotationContent(
+    WidgetRef ref,
+    String label,
+    VIB3Parameters param,
+  ) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final engineState = ref.watch(engineProvider);
+        final value = engineState.parameters[param]?.toDouble() ?? 0.0;
+
+        return Column(
+          children: [
+            // Large rotation indicator
+            SizedBox(
+              height: 200,
+              width: 200,
+              child: CustomPaint(
+                painter: RotationIndicatorPainter(
+                  value: value,
+                  color: VIB3CategoryColors.rotation,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Value display
+            Text(
+              '${(value % 6.28).toStringAsFixed(3)} rad',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              '${((value % 6.28) * 180 / pi).toStringAsFixed(1)}°',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Slider
+            Slider(
+              value: value % 6.28,
+              min: 0,
+              max: 6.28,
+              divisions: 100,
+              activeColor: VIB3CategoryColors.rotation,
+              onChanged: (newValue) {
+                ref.read(engineProvider.notifier).setParameter(param, newValue);
+              },
+            ),
+
+            const SizedBox(height: 10),
+
+            // Preset buttons
+            Wrap(
+              spacing: 8,
+              children: [
+                _presetButton(ref, param, '0°', 0.0),
+                _presetButton(ref, param, '90°', pi / 2),
+                _presetButton(ref, param, '180°', pi),
+                _presetButton(ref, param, '270°', 3 * pi / 2),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _presetButton(WidgetRef ref, VIB3Parameters param, String label, double value) {
+    return ElevatedButton(
+      onPressed: () {
+        ref.read(engineProvider.notifier).setParameter(param, value);
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: VIB3CategoryColors.rotation.withOpacity(0.3),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+      child: Text(label),
     );
   }
 
