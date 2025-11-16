@@ -43,6 +43,11 @@ dependencies:
   # WebGL Integration
   flutter_inappwebview: ^6.0.0
 
+  # Audio Input & Analysis
+  mic_stream: ^0.6.5
+  audio_session: ^0.1.16
+  fft: ^2.0.0
+
   # Math & Utilities
   vector_math: ^2.1.4
 

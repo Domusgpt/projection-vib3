@@ -73,6 +73,10 @@ class EngineNotifier extends StateNotifier<EngineState> {
     state = EngineState(parameters: _getDefaults());
   }
 
+  void loadPreset(Map<VIB3Parameters, num> presetParams) {
+    applyParameterBatch(presetParams);
+  }
+
   void _sendToWebGL(VIB3Parameters param, num value) {
     // TODO: Implement JavaScript bridge communication
     print('WebGL: ${param.name} = $value');
