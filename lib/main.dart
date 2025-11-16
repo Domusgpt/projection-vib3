@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'utils/vib3_colors.dart';
 import 'widgets/bezel/bezel_tab_bar.dart';
 import 'widgets/bezel/tabs/rotation_tab.dart';
+import 'widgets/canvas/webgl_canvas.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,48 +59,8 @@ class MainScreen extends ConsumerWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // Background gradient (placeholder for WebGL canvas)
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: VIB3Colors.backgroundGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'VIB3 LIGHT LAB',
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: VIB3Colors.cyan.withOpacity(0.3),
-                      letterSpacing: 4,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'WebGL Canvas Placeholder',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white30,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Text(
-                    'Tap bezel tab to test controls',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: VIB3Colors.magenta.withOpacity(0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // WebGL Canvas (full screen)
+          const WebGLCanvas(),
           // Bezel tab bar at bottom
           Positioned(
             left: 0,
