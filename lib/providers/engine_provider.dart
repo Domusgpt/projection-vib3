@@ -3,7 +3,7 @@ import '../models/vib3_parameters.dart';
 
 class EngineState {
   final Map<VIB3Parameters, num> parameters;
-  final String activeSystem; // 'faceted', 'quantum', 'holographic', 'polychora'
+  final String activeSystem; // 'faceted', 'quantum', 'holographic' (polychora coming later)
   final int activeGeometry; // 0-23
 
   EngineState({
