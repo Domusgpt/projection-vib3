@@ -6,6 +6,7 @@ import '../../providers/engine_provider.dart';
 import '../../providers/audio_provider.dart';
 import '../../services/webgl_bridge.dart';
 import '../../utils/logger.dart';
+import '../../utils/vib3_colors.dart';
 
 /// WebGL Canvas Widget with InAppWebView integration and proper lifecycle management
 class WebGLCanvas extends ConsumerStatefulWidget {
@@ -19,6 +20,9 @@ class _WebGLCanvasState extends ConsumerState<WebGLCanvas> {
   InAppWebViewController? _webViewController;
   WebGLBridge? _bridge;
   bool _engineReady = false;
+  bool _hasError = false;
+  String? _errorMessage;
+  bool _isLoading = true;
   Timer? _updateTimer;
 
   // Track last sent values to avoid unnecessary updates
@@ -99,8 +103,86 @@ class _WebGLCanvasState extends ConsumerState<WebGLCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    // Don't call parameter updates in build - using Timer instead
-    return InAppWebView(
+    // Show loading state while WebGL initializes
+    if (_isLoading && !_engineReady && !_hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 60,
+              height: 60,
+              child: CircularProgressIndicator(
+                color: VIB3Colors.cyan,
+                strokeWidth: 3,
+              ),
+            ),
+            SizedBox(height: 24),
+            Text(
+              'Initializing WebGL Engine...',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show error state if WebGL failed to load
+    if (_hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: VIB3Colors.orange,
+              size: 60,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'WebGL Engine Error',
+              style: TextStyle(
+                color: VIB3Colors.orange,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'Failed to initialize',
+              style: TextStyle(
+                color: Colors.white60,
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _hasError = false;
+                  _isLoading = true;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: VIB3Colors.cyan,
+                foregroundColor: Colors.black,
+              ),
+              child: Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show WebGL canvas with fade-in animation
+    return AnimatedOpacity(
+      opacity: _engineReady ? 1.0 : 0.0,
+      duration: Duration(milliseconds: 500),
+      child: InAppWebView(
       key: const ValueKey('webgl_canvas'), // Prevent recreation
       initialSettings: InAppWebViewSettings(
         transparentBackground: true,
@@ -124,6 +206,8 @@ class _WebGLCanvasState extends ConsumerState<WebGLCanvas> {
             if (mounted) {
               setState(() {
                 _engineReady = true;
+                _isLoading = false;
+                _hasError = false;
               });
               VIB3Logger.success('VIB3 WebGL Engine ready', 'WebGL');
             }
@@ -144,14 +228,34 @@ class _WebGLCanvasState extends ConsumerState<WebGLCanvas> {
         VIB3Logger.debug(consoleMessage.message, 'WebGL Console');
       },
       onLoadStop: (controller, url) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
         VIB3Logger.success('WebGL page loaded: $url', 'WebGL');
       },
       onReceivedError: (controller, request, error) {
+        if (mounted) {
+          setState(() {
+            _hasError = true;
+            _isLoading = false;
+            _errorMessage = error.description;
+          });
+        }
         VIB3Logger.error('WebGL load error: ${error.description}', 'WebGL');
       },
       onReceivedHttpError: (controller, request, errorResponse) {
+        if (mounted) {
+          setState(() {
+            _hasError = true;
+            _isLoading = false;
+            _errorMessage = 'HTTP ${errorResponse.statusCode}';
+          });
+        }
         VIB3Logger.error('WebGL HTTP error ${errorResponse.statusCode}', 'WebGL');
       },
+      ),
     );
   }
 

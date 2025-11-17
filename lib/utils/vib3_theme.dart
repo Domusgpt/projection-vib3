@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'vib3_colors.dart';
 
 class VIB3Theme {
@@ -166,22 +167,22 @@ extension VIB3ControlCategoryExtension on VIB3ControlCategory {
 
 class VIB3Haptics {
   static void light() {
-    // TODO: Implement haptic feedback
-    // HapticFeedback.lightImpact();
+    HapticFeedback.lightImpact();
   }
 
   static void medium() {
-    // TODO: Implement haptic feedback
-    // HapticFeedback.mediumImpact();
+    HapticFeedback.mediumImpact();
   }
 
   static void heavy() {
-    // TODO: Implement haptic feedback
-    // HapticFeedback.heavyImpact();
+    HapticFeedback.heavyImpact();
   }
 
   static void selection() {
-    // TODO: Implement haptic feedback
-    // HapticFeedback.selectionClick();
+    HapticFeedback.selectionClick();
+  }
+
+  static void vibrate() {
+    HapticFeedback.vibrate();
   }
 }
