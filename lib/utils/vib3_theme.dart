@@ -10,8 +10,7 @@ class VIB3Theme {
       colorScheme: ColorScheme.dark(
         primary: VIB3Colors.cyan,
         secondary: VIB3Colors.magenta,
-        surface: VIB3Colors.darkPurple,
-        background: VIB3Colors.darkNavy,
+        surface: VIB3Colors.darkNavy,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,

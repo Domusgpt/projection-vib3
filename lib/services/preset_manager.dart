@@ -1,6 +1,7 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/preset.dart';
 import '../models/vib3_parameters.dart';
+import '../utils/logger.dart';
 
 /// Manages preset storage and retrieval using Hive with JSON (Singleton pattern)
 class PresetManager {
@@ -22,7 +23,7 @@ class PresetManager {
   /// Initialize Hive and open preset box (only once)
   Future<void> init() async {
     if (_isInitialized && _presetsBox != null && _presetsBox!.isOpen) {
-      print('✅ PresetManager already initialized');
+      VIB3Logger.debug('PresetManager already initialized', 'PresetManager');
       return;
     }
 
@@ -33,7 +34,7 @@ class PresetManager {
 
     if (_presetsBox == null || !_presetsBox!.isOpen) {
       _presetsBox = await Hive.openBox(_boxName);
-      print('✅ PresetManager initialized with ${_presetsBox!.length} presets');
+      VIB3Logger.success('PresetManager initialized with ${_presetsBox!.length} presets', 'PresetManager');
 
       // Create default presets if box is empty
       if (_presetsBox!.isEmpty) {

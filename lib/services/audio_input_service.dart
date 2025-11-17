@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:math' as math;
 import 'package:mic_stream/mic_stream.dart';
 import 'package:audio_session/audio_session.dart';
+import '../utils/logger.dart';
 
 /// Real-time audio input service with FFT analysis
 class AudioInputService {
@@ -12,7 +13,7 @@ class AudioInputService {
   final int sampleRate = 44100;
   final int bufferSize = 4096; // Power of 2 for FFT
 
-  List<double> _audioBuffer = [];
+  final List<double> _audioBuffer = [];
 
   bool _isListening = false;
   bool get isListening => _isListening;
@@ -58,20 +59,20 @@ class AudioInputService {
       _audioSubscription = _micStream!.listen(
         _onAudioData,
         onError: (error) {
-          print('Audio stream error: $error');
+          VIB3Logger.error('Audio stream error', 'AudioInput', error);
           stopListening();
         },
         onDone: () {
-          print('Audio stream completed');
+          VIB3Logger.info('Audio stream completed', 'AudioInput');
           stopListening();
         },
       );
 
       _isListening = true;
-      print('✅ Audio input started: $sampleRate Hz, buffer size: $bufferSize');
+      VIB3Logger.success('Audio input started: $sampleRate Hz, buffer: $bufferSize', 'AudioInput');
       return true;
     } catch (e) {
-      print('❌ Failed to start audio input: $e');
+      VIB3Logger.error('Failed to start audio input', 'AudioInput', e);
       _isListening = false;
       return false;
     }
@@ -187,7 +188,7 @@ class AudioInputService {
     _audioBuffer.clear();
     _isListening = false;
 
-    print('🧹 Audio input stopped');
+    VIB3Logger.info('Audio input stopped', 'AudioInput');
   }
 
   /// Dispose resources

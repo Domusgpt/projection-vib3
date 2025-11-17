@@ -212,7 +212,7 @@ class CameraTab extends ConsumerWidget {
                         Row(
                           children: [
                             Text(
-                              '${rail.pathType.toString().split('.').last}',
+                              rail.pathType.toString().split('.').last,
                               style: TextStyle(
                                   fontSize: 9, color: Colors.white60),
                             ),
@@ -224,7 +224,7 @@ class CameraTab extends ConsumerWidget {
                             ),
                             SizedBox(width: 12),
                             Text(
-                              '${rail.loopMode.toString().split('.').last}',
+                              rail.loopMode.toString().split('.').last,
                               style: TextStyle(
                                   fontSize: 9, color: Colors.white60),
                             ),

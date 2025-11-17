@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/vib3_parameters.dart';
+import '../utils/logger.dart';
 
 class EngineState {
   final Map<VIB3Parameters, num> parameters;
@@ -79,12 +80,12 @@ class EngineNotifier extends StateNotifier<EngineState> {
 
   void _sendToWebGL(VIB3Parameters param, num value) {
     // TODO: Implement JavaScript bridge communication
-    print('WebGL: ${param.name} = $value');
+    VIB3Logger.debug('${param.name} = $value', 'WebGL');
   }
 
   void _sendBatchToWebGL(Map<VIB3Parameters, num> batch) {
     // TODO: Implement batch update
-    print('WebGL Batch: ${batch.length} parameters');
+    VIB3Logger.debug('Batch update: ${batch.length} parameters', 'WebGL');
   }
 }
 

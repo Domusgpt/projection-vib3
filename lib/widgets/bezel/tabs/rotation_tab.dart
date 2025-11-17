@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../utils/vib3_colors.dart';
 import '../../../utils/vib3_theme.dart';
 import '../../../utils/floating_widget_helper.dart';
 import '../../../providers/engine_provider.dart';
@@ -115,7 +114,7 @@ class RotationTab extends ConsumerWidget {
           ),
           SizedBox(height: 8),
           Text(
-            '${(value % 6.28).toStringAsFixed(2)}',
+            (value % 6.28).toStringAsFixed(2),
             style: TextStyle(
               fontSize: 10,
               color: Colors.white70,

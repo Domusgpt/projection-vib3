@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../utils/vib3_colors.dart';
 import '../../../utils/vib3_theme.dart';
 import '../../../providers/engine_provider.dart';
 import '../../../models/vib3_parameters.dart';

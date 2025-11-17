@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../utils/vib3_colors.dart';
 import '../../../utils/vib3_theme.dart';
 import '../../../providers/audio_provider.dart';
-import '../../../models/audio_band.dart';
 
 class AudioTab extends ConsumerWidget {
   const AudioTab({super.key});
@@ -145,7 +143,7 @@ class AudioTab extends ConsumerWidget {
               Text('BPM:', style: TextStyle(fontSize: 10, color: Colors.white60)),
               SizedBox(width: 8),
               Text(
-                '${audioState.beatEngine.bpm.toStringAsFixed(1)}',
+                audioState.beatEngine.bpm.toStringAsFixed(1),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

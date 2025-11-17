@@ -80,8 +80,9 @@ class AudioBeatEngine {
 
     // Auto-detect BPM from beat intervals
     if (autoDetect && lastBeatTime != null) {
-      final interval = now.difference(lastBeatTime!).inMilliseconds;
-      final detectedBPM = 60000.0 / interval;
+      // Calculate BPM from interval (could be used for auto-BPM detection in future)
+      // final interval = now.difference(lastBeatTime!).inMilliseconds;
+      // final detectedBPM = 60000.0 / interval;
 
       // Add to history
       recentBeats.add(now);

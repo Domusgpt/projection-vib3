@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/vib3_colors.dart';
 import '../utils/vib3_theme.dart';
+import '../utils/logger.dart';
 import '../widgets/bezel/bezel_tab_bar.dart';
 import '../widgets/canvas/webgl_canvas.dart';
 import '../widgets/canvas/multi_touch_feedback.dart';
@@ -12,7 +13,6 @@ import '../providers/palette_provider.dart';
 import '../providers/camera_provider.dart';
 import '../providers/lighting_provider.dart';
 import '../providers/macro_provider.dart';
-import '../providers/timeline_provider.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -196,7 +196,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   @override
   void dispose() {
-    print('🧹 Disposing MainScreen - cancelling update timer');
+    VIB3Logger.info('Disposing MainScreen - cancelling update timer', 'MainScreen');
     _updateTimer?.cancel();
     _updateTimer = null;
     super.dispose();

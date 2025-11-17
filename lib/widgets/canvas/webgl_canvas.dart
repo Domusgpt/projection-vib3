@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/engine_provider.dart';
 import '../../providers/audio_provider.dart';
 import '../../services/webgl_bridge.dart';
+import '../../utils/logger.dart';
 
 /// WebGL Canvas Widget with InAppWebView integration and proper lifecycle management
 class WebGLCanvas extends ConsumerStatefulWidget {
@@ -124,7 +125,7 @@ class _WebGLCanvasState extends ConsumerState<WebGLCanvas> {
               setState(() {
                 _engineReady = true;
               });
-              print('✅ VIB3 WebGL Engine ready');
+              VIB3Logger.success('VIB3 WebGL Engine ready', 'WebGL');
             }
           },
         );
@@ -134,30 +135,29 @@ class _WebGLCanvasState extends ConsumerState<WebGLCanvas> {
           callback: (args) {
             if (args.isNotEmpty && mounted) {
               final count = args[0] as int;
-              // This will be picked up by the MultiTouchFeedback overlay
-              print('Touch count: $count');
+              VIB3Logger.debug('Touch count: $count', 'WebGL');
             }
           },
         );
       },
       onConsoleMessage: (controller, consoleMessage) {
-        print('WebGL Console: ${consoleMessage.message}');
+        VIB3Logger.debug(consoleMessage.message, 'WebGL Console');
       },
       onLoadStop: (controller, url) {
-        print('✅ WebGL page loaded: $url');
+        VIB3Logger.success('WebGL page loaded: $url', 'WebGL');
       },
-      onLoadError: (controller, url, code, message) {
-        print('❌ WebGL load error: $message');
+      onReceivedError: (controller, request, error) {
+        VIB3Logger.error('WebGL load error: ${error.description}', 'WebGL');
       },
-      onLoadHttpError: (controller, url, statusCode, description) {
-        print('❌ WebGL HTTP error $statusCode: $description');
+      onReceivedHttpError: (controller, request, errorResponse) {
+        VIB3Logger.error('WebGL HTTP error ${errorResponse.statusCode}', 'WebGL');
       },
     );
   }
 
   @override
   void dispose() {
-    print('🧹 Disposing WebGL Canvas');
+    VIB3Logger.info('Disposing WebGL Canvas', 'WebGL');
     _updateTimer?.cancel();
     _updateTimer = null;
 

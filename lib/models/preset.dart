@@ -1,3 +1,4 @@
+import '../utils/logger.dart';
 import 'vib3_parameters.dart';
 
 /// VIB3 Preset - stores all parameter values and settings
@@ -20,10 +21,10 @@ class VIB3Preset {
     Map<String, num>? parameters,
     List<String>? tags,
     this.thumbnailPath,
-  })  : this.createdAt = createdAt ?? DateTime.now(),
-        this.modifiedAt = modifiedAt ?? DateTime.now(),
-        this.parameters = parameters ?? {},
-        this.tags = tags ?? [];
+  })  : createdAt = createdAt ?? DateTime.now(),
+        modifiedAt = modifiedAt ?? DateTime.now(),
+        parameters = parameters ?? {},
+        tags = tags ?? [];
 
   /// Create a preset from current engine state
   factory VIB3Preset.fromParameters(
@@ -54,7 +55,7 @@ class VIB3Preset {
         final param = VIB3Parameters.values.firstWhere((p) => p.name == key);
         result[param] = value;
       } catch (e) {
-        print('Unknown parameter: $key');
+        VIB3Logger.warn('Unknown parameter: $key', 'Preset');
       }
     });
     return result;
