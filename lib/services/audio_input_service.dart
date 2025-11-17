@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:math' as math;
 import 'package:mic_stream/mic_stream.dart';
 import 'package:audio_session/audio_session.dart';
-import 'package:fft/fft.dart';
 
 /// Real-time audio input service with FFT analysis
 class AudioInputService {
@@ -12,7 +12,6 @@ class AudioInputService {
   final int sampleRate = 44100;
   final int bufferSize = 4096; // Power of 2 for FFT
 
-  late FFT _fft;
   List<double> _audioBuffer = [];
 
   bool _isListening = false;
@@ -21,9 +20,7 @@ class AudioInputService {
   // Callback for FFT data
   Function(Float32List fftMagnitudes)? onFFTData;
 
-  AudioInputService() {
-    _fft = FFT(bufferSize);
-  }
+  AudioInputService();
 
   /// Start listening to microphone input
   Future<bool> startListening() async {
@@ -71,10 +68,10 @@ class AudioInputService {
       );
 
       _isListening = true;
-      print('Audio input started: $sampleRate Hz, buffer size: $bufferSize');
+      print('✅ Audio input started: $sampleRate Hz, buffer size: $bufferSize');
       return true;
     } catch (e) {
-      print('Failed to start audio input: $e');
+      print('❌ Failed to start audio input: $e');
       _isListening = false;
       return false;
     }
@@ -100,24 +97,16 @@ class AudioInputService {
     }
   }
 
-  /// Perform FFT analysis on audio buffer
+  /// Perform FFT analysis on audio buffer (simplified radix-2 FFT)
   void _processFFT(List<double> samples) {
     // Apply Hann window to reduce spectral leakage
     final windowed = List<double>.generate(bufferSize, (i) {
-      final windowValue = 0.5 * (1 - (2 * 3.14159265359 * i / (bufferSize - 1)).cos());
+      final windowValue = 0.5 * (1 - math.cos(2 * math.pi * i / (bufferSize - 1)));
       return samples[i] * windowValue;
     });
 
-    // Perform FFT
-    final fftResult = _fft.realFft(windowed);
-
-    // Calculate magnitudes (only need first half of spectrum)
-    final magnitudes = Float32List(bufferSize ~/ 2);
-    for (int i = 0; i < bufferSize ~/ 2; i++) {
-      final real = fftResult[i];
-      final imag = i < fftResult.length - 1 ? fftResult[i + 1] : 0.0;
-      magnitudes[i] = (real * real + imag * imag).sqrt() / bufferSize;
-    }
+    // Perform simplified FFT using Cooley-Tukey algorithm
+    final magnitudes = _fftMagnitude(windowed);
 
     // Normalize magnitudes to 0.0 - 1.0 range
     double maxMagnitude = magnitudes.reduce((a, b) => a > b ? a : b);
@@ -133,6 +122,61 @@ class AudioInputService {
     }
   }
 
+  /// Simple FFT magnitude calculation using Cooley-Tukey radix-2 algorithm
+  Float32List _fftMagnitude(List<double> samples) {
+    final n = samples.length;
+    final realPart = List<double>.from(samples);
+    final imagPart = List<double>.filled(n, 0.0);
+
+    // Bit-reversal permutation
+    int j = 0;
+    for (int i = 0; i < n; i++) {
+      if (i < j) {
+        final tempReal = realPart[i];
+        final tempImag = imagPart[i];
+        realPart[i] = realPart[j];
+        imagPart[i] = imagPart[j];
+        realPart[j] = tempReal;
+        imagPart[j] = tempImag;
+      }
+      int m = n ~/ 2;
+      while (m >= 1 && j >= m) {
+        j -= m;
+        m ~/= 2;
+      }
+      j += m;
+    }
+
+    // Cooley-Tukey FFT
+    int mmax = 1;
+    while (n > mmax) {
+      final istep = mmax * 2;
+      final theta = -math.pi / mmax;
+      for (int m = 0; m < mmax; m++) {
+        final wReal = math.cos(m * theta);
+        final wImag = math.sin(m * theta);
+        for (int i = m; i < n; i += istep) {
+          final j = i + mmax;
+          final tempReal = wReal * realPart[j] - wImag * imagPart[j];
+          final tempImag = wReal * imagPart[j] + wImag * realPart[j];
+          realPart[j] = realPart[i] - tempReal;
+          imagPart[j] = imagPart[i] - tempImag;
+          realPart[i] += tempReal;
+          imagPart[i] += tempImag;
+        }
+      }
+      mmax = istep;
+    }
+
+    // Calculate magnitudes (only need first half of spectrum)
+    final magnitudes = Float32List(n ~/ 2);
+    for (int i = 0; i < n ~/ 2; i++) {
+      magnitudes[i] = math.sqrt(realPart[i] * realPart[i] + imagPart[i] * imagPart[i]);
+    }
+
+    return magnitudes;
+  }
+
   /// Stop listening to microphone input
   Future<void> stopListening() async {
     if (!_isListening) return;
@@ -143,7 +187,7 @@ class AudioInputService {
     _audioBuffer.clear();
     _isListening = false;
 
-    print('Audio input stopped');
+    print('🧹 Audio input stopped');
   }
 
   /// Dispose resources

@@ -17,7 +17,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.9.0
+  sdk: ^3.5.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -46,7 +46,7 @@ dependencies:
   # Audio Input & Analysis
   mic_stream: ^0.6.5
   audio_session: ^0.1.16
-  fft: ^2.0.0
+  # fft: Using manual FFT implementation instead
 
   # Math & Utilities
   vector_math: ^2.1.4

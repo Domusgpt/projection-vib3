@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:vector_math/vector_math.dart' as vm;
 import '../models/camera_system.dart';
 import '../services/beat_detector.dart';

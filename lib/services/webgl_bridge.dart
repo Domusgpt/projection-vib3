@@ -9,7 +9,7 @@ class WebGLBridge {
   WebGLBridge(this.controller);
 
   /// Update a single parameter in the WebGL engine
-  Future<void> updateParameter(VIB3Parameter param, double value) async {
+  Future<void> updateParameter(VIB3Parameters param, double value) async {
     final jsParamName = _getUniformName(param);
     await controller.evaluateJavascript(source: '''
       if (window.vib3Engine) {
@@ -19,7 +19,7 @@ class WebGLBridge {
   }
 
   /// Update multiple parameters at once (more efficient)
-  Future<void> updateAllParameters(Map<VIB3Parameter, double> parameters) async {
+  Future<void> updateAllParameters(Map<VIB3Parameters, double> parameters) async {
     final jsObject = <String, dynamic>{};
 
     for (final entry in parameters.entries) {
@@ -118,59 +118,59 @@ class WebGLBridge {
     ''');
   }
 
-  /// Map VIB3Parameter enum to WebGL uniform name
-  String _getUniformName(VIB3Parameter param) {
+  /// Map VIB3Parameters enum to WebGL uniform name
+  String _getUniformName(VIB3Parameters param) {
     switch (param) {
       // Rotation
-      case VIB3Parameter.rotationXY:
+      case VIB3Parameters.rotationXY:
         return 'uRotXY';
-      case VIB3Parameter.rotationXZ:
+      case VIB3Parameters.rotationXZ:
         return 'uRotXZ';
-      case VIB3Parameter.rotationYZ:
+      case VIB3Parameters.rotationYZ:
         return 'uRotYZ';
-      case VIB3Parameter.rotationXW:
+      case VIB3Parameters.rotationXW:
         return 'uRotXW';
-      case VIB3Parameter.rotationYW:
+      case VIB3Parameters.rotationYW:
         return 'uRotYW';
-      case VIB3Parameter.rotationZW:
+      case VIB3Parameters.rotationZW:
         return 'uRotZW';
 
       // Visual
-      case VIB3Parameter.gridDensity:
+      case VIB3Parameters.gridDensity:
         return 'uGridDensity';
-      case VIB3Parameter.morphFactor:
+      case VIB3Parameters.morphFactor:
         return 'uMorphFactor';
-      case VIB3Parameter.chaos:
+      case VIB3Parameters.chaos:
         return 'uChaos';
-      case VIB3Parameter.speed:
+      case VIB3Parameters.speed:
         return 'uSpeed';
 
       // Color
-      case VIB3Parameter.hue:
+      case VIB3Parameters.hue:
         return 'uHue';
-      case VIB3Parameter.saturation:
+      case VIB3Parameters.saturation:
         return 'uSaturation';
-      case VIB3Parameter.intensity:
+      case VIB3Parameters.intensity:
         return 'uIntensity';
 
       // Effects
-      case VIB3Parameter.cardBendAmount:
+      case VIB3Parameters.cardBendAmount:
         return 'uCardBendAmount';
-      case VIB3Parameter.perspectiveFOV:
+      case VIB3Parameters.perspectiveFOV:
         return 'uPerspectiveFOV';
-      case VIB3Parameter.bloom:
+      case VIB3Parameters.bloom:
         return 'uBloom';
-      case VIB3Parameter.chromaticAberration:
+      case VIB3Parameters.chromaticAberration:
         return 'uChromaticAberration';
 
       // Camera
-      case VIB3Parameter.cameraX:
+      case VIB3Parameters.cameraX:
         return 'uCameraPosition'; // Will need special handling for vec3
-      case VIB3Parameter.cameraY:
+      case VIB3Parameters.cameraY:
         return 'uCameraPosition';
-      case VIB3Parameter.cameraZ:
+      case VIB3Parameters.cameraZ:
         return 'uCameraPosition';
-      case VIB3Parameter.cameraFOV:
+      case VIB3Parameters.cameraFOV:
         return 'uCameraFOV';
 
       default:

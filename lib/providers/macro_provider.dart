@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/macro_control.dart';
+import '../models/audio_band.dart';
 import '../providers/audio_provider.dart';
 
 class MacroState {
