@@ -18,7 +18,7 @@ class TimelineKeyframeEditor extends ConsumerStatefulWidget {
 class _TimelineKeyframeEditorState
     extends ConsumerState<TimelineKeyframeEditor> {
   TimelineTrack? _selectedTrack;
-  VIB3Parameter _selectedParameter = VIB3Parameter.rotationXY;
+  VIB3Parameters _selectedParameter = VIB3Parameters.rotationXY;
   TimelineTrackType _selectedTrackType = TimelineTrackType.parameter;
 
   @override
@@ -291,7 +291,6 @@ class _TimelineKeyframeEditorState
       borderColor: isSelected
           ? VIB3Colors.green.withOpacity(0.5)
           : Colors.white.withOpacity(0.2),
-      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,12 +534,12 @@ class _TimelineKeyframeEditorState
               // Parameter selector (for parameter tracks)
               if (_selectedTrackType == TimelineTrackType.parameter)
                 Expanded(
-                  child: DropdownButton<VIB3Parameter>(
+                  child: DropdownButton<VIB3Parameters>(
                     value: _selectedParameter,
                     dropdownColor: VIB3Colors.darkNavy,
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                     isExpanded: true,
-                    items: VIB3Parameter.values
+                    items: VIB3Parameters.values
                         .map((param) => DropdownMenuItem(
                               value: param,
                               child: Text(

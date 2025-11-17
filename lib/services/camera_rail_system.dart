@@ -143,9 +143,9 @@ class CameraRailSystem {
     } else if (currentMode == CameraPreset.freeOrbit) {
       // Free orbit mode - calculate position from spherical coordinates
       currentPosition = vm.Vector3(
-        orbitDistance * cos(orbitPitch) * sin(orbitYaw),
-        orbitDistance * sin(orbitPitch),
-        orbitDistance * cos(orbitPitch) * cos(orbitYaw),
+        orbitDistance * math.cos(orbitPitch) * math.sin(orbitYaw),
+        orbitDistance * math.sin(orbitPitch),
+        orbitDistance * math.cos(orbitPitch) * math.cos(orbitYaw),
       );
       currentTarget = vm.Vector3.zero();
     }

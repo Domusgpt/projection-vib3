@@ -9,7 +9,13 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
   TimelineNotifier()
       : super(const TimelineState(
           tracks: [],
-          duration: 32.0,
+          totalDuration: 60.0,
+          playheadPosition: 0.0,
+          isPlaying: false,
+          isLooping: false,
+          syncToBPM: false,
+          bpm: 128.0,
+          timeSignature: TimeSignature.fourFour,
         ));
 
   void play() {
@@ -18,7 +24,7 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
     state = state.copyWith(isPlaying: true);
 
     // Start playback timer (60 FPS)
-    _playbackTimer = Timer.periodic(Duration(milliseconds: 16), (_) {
+    _playbackTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
       _updatePlayhead();
     });
   }
@@ -30,7 +36,7 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
   }
 
   void stop() {
-    state = state.copyWith(isPlaying: false, playhead: 0.0);
+    state = state.copyWith(isPlaying: false, playheadPosition: 0.0);
     _playbackTimer?.cancel();
     _playbackTimer = null;
   }
@@ -38,43 +44,44 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
   void _updatePlayhead() {
     if (!state.isPlaying) return;
 
-    double newPlayhead = state.playhead + 0.016; // 16ms per frame
+    double newPlayhead = state.playheadPosition + 0.016; // 16ms per frame
 
-    if (newPlayhead >= state.duration) {
+    if (newPlayhead >= state.totalDuration) {
       if (state.isLooping) {
-        newPlayhead = newPlayhead % state.duration;
+        newPlayhead = newPlayhead % state.totalDuration;
       } else {
-        newPlayhead = state.duration;
+        newPlayhead = state.totalDuration;
         pause();
       }
     }
 
-    state = state.copyWith(playhead: newPlayhead);
+    state = state.copyWith(playheadPosition: newPlayhead);
   }
 
   void seek(double time) {
     state = state.copyWith(
-      playhead: time.clamp(0.0, state.duration),
+      playheadPosition: time.clamp(0.0, state.totalDuration),
     );
   }
 
   void setDuration(double duration) {
-    state = state.copyWith(duration: duration);
+    state = state.copyWith(totalDuration: duration);
   }
 
-  void toggleLooping() {
+  void toggleLoop() {
     state = state.copyWith(isLooping: !state.isLooping);
+  }
+
+  void toggleBPMSync() {
+    state = state.copyWith(syncToBPM: !state.syncToBPM);
   }
 
   void setBPM(double bpm) {
     state = state.copyWith(bpm: bpm);
   }
 
-  void setTimeSignature(int beats, int note) {
-    state = state.copyWith(
-      timeSignatureBeats: beats,
-      timeSignatureNote: note,
-    );
+  void setTimeSignature(TimeSignature signature) {
+    state = state.copyWith(timeSignature: signature);
   }
 
   void addTrack(TimelineTrack track) {
@@ -88,72 +95,74 @@ class TimelineNotifier extends StateNotifier<TimelineState> {
     state = state.copyWith(tracks: newTracks);
   }
 
-  void toggleTrack(String trackId) {
+  void toggleTrackMute(String trackId) {
     final newTracks = state.tracks.map((track) {
       if (track.id == trackId) {
-        return TimelineTrack(
-          id: track.id,
-          name: track.name,
-          type: track.type,
-          targetParameter: track.targetParameter,
-          curve: track.curve,
-          triggerPoints: track.triggerPoints,
-          enabled: !track.enabled,
-        );
+        return track.copyWith(isMuted: !track.isMuted);
       }
       return track;
     }).toList();
     state = state.copyWith(tracks: newTracks);
   }
 
+  void addKeyframe(String trackId, TimelineKeyframe keyframe) {
+    final newTracks = state.tracks.map((track) {
+      if (track.id == trackId) {
+        final newKeyframes = List<TimelineKeyframe>.from(track.keyframes);
+        newKeyframes.add(keyframe);
+        // Sort by time
+        newKeyframes.sort((a, b) => a.time.compareTo(b.time));
+        return track.copyWith(keyframes: newKeyframes);
+      }
+      return track;
+    }).toList();
+    state = state.copyWith(tracks: newTracks);
+  }
+
+  void removeKeyframe(String trackId, int keyframeIndex) {
+    final newTracks = state.tracks.map((track) {
+      if (track.id == trackId) {
+        final newKeyframes = List<TimelineKeyframe>.from(track.keyframes);
+        if (keyframeIndex >= 0 && keyframeIndex < newKeyframes.length) {
+          newKeyframes.removeAt(keyframeIndex);
+        }
+        return track.copyWith(keyframes: newKeyframes);
+      }
+      return track;
+    }).toList();
+    state = state.copyWith(tracks: newTracks);
+  }
+
+  void updateKeyframe(
+      String trackId, int keyframeIndex, TimelineKeyframe newKeyframe) {
+    final newTracks = state.tracks.map((track) {
+      if (track.id == trackId) {
+        final newKeyframes = List<TimelineKeyframe>.from(track.keyframes);
+        if (keyframeIndex >= 0 && keyframeIndex < newKeyframes.length) {
+          newKeyframes[keyframeIndex] = newKeyframe;
+          // Resort by time
+          newKeyframes.sort((a, b) => a.time.compareTo(b.time));
+        }
+        return track.copyWith(keyframes: newKeyframes);
+      }
+      return track;
+    }).toList();
+    state = state.copyWith(tracks: newTracks);
+  }
+
+  /// Get parameter values at current playhead position
   Map<VIB3Parameters, num> getActiveParameters() {
     final result = <VIB3Parameters, num>{};
 
     for (final track in state.tracks) {
-      if (!track.enabled || track.targetParameter == null) continue;
+      if (track.isMuted || track.targetParameter == null) continue;
 
-      switch (track.type) {
-        case TrackType.parameterAutomation:
-          if (track.curve != null) {
-            final value = track.curve!.getValueAt(state.playhead);
-            result[track.targetParameter!] = value;
-          }
-          break;
-
-        case TrackType.beatTrigger:
-          // Check if playhead is near any trigger point
-          if (track.triggerPoints != null) {
-            for (final triggerTime in track.triggerPoints!) {
-              if ((state.playhead - triggerTime).abs() < 0.05) {
-                // Within 50ms of trigger
-                result[track.targetParameter!] = 1.0;
-                break;
-              }
-            }
-          }
-          break;
-
-        case TrackType.geometryChange:
-        case TrackType.paletteSwap:
-          // These are handled separately
-          break;
-      }
+      // Get interpolated value from track's keyframes
+      final value = track.getValueAt(state.playheadPosition);
+      result[track.targetParameter!] = value;
     }
 
     return result;
-  }
-
-  void loadPreset(TimelinePreset preset) {
-    state = TimelineState(
-      tracks: preset.tracks,
-      duration: preset.duration,
-      playhead: 0.0,
-      isPlaying: false,
-      isLooping: state.isLooping,
-      bpm: state.bpm,
-      timeSignatureBeats: state.timeSignatureBeats,
-      timeSignatureNote: state.timeSignatureNote,
-    );
   }
 
   @override

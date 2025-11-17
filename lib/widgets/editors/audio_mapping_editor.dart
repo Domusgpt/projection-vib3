@@ -16,7 +16,7 @@ class AudioMappingEditor extends ConsumerStatefulWidget {
 
 class _AudioMappingEditorState extends ConsumerState<AudioMappingEditor> {
   AudioSource _selectedSource = AudioSource.bassLevel;
-  VIB3Parameter _selectedParameter = VIB3Parameter.rotationXY;
+  VIB3Parameters _selectedParameter = VIB3Parameters.rotationXY;
   AudioMappingMode _selectedMode = AudioMappingMode.direct;
   double _intensity = 1.0;
   double _attackMs = 50.0;
@@ -149,7 +149,6 @@ class _AudioMappingEditorState extends ConsumerState<AudioMappingEditor> {
       borderColor: mapping.enabled
           ? VIB3Colors.cyan.withOpacity(0.5)
           : Colors.white.withOpacity(0.2),
-      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,7 +433,7 @@ class _AudioMappingEditorState extends ConsumerState<AudioMappingEditor> {
 
   Widget _buildParameterSelector() {
     // Group parameters by category
-    final parameters = VIB3Parameter.values;
+    final parameters = VIB3Parameters.values;
 
     return Container(
       constraints: const BoxConstraints(maxHeight: 150),
@@ -598,7 +597,7 @@ class _AudioMappingEditorState extends ConsumerState<AudioMappingEditor> {
     }
   }
 
-  String _getParameterName(VIB3Parameter param) {
+  String _getParameterName(VIB3Parameters param) {
     return param.name.replaceAllMapped(
       RegExp(r'([A-Z])'),
       (match) => ' ${match.group(0)}',

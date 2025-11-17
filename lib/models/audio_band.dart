@@ -1,3 +1,5 @@
+import 'vib3_parameters.dart';
+
 class FrequencyBand {
   final String name;
   final double minFreq;
@@ -44,7 +46,7 @@ enum AudioMappingMode {
 
 class AudioParameterMapping {
   final AudioSource source;
-  final String targetParameter;
+  final VIB3Parameters targetParameter;
   final double intensity;
   final AudioMappingMode mode;
   final double attackMs;

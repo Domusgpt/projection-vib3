@@ -19,7 +19,7 @@ class WebGLBridge {
   }
 
   /// Update multiple parameters at once (more efficient)
-  Future<void> updateAllParameters(Map<VIB3Parameters, double> parameters) async {
+  Future<void> updateAllParameters(Map<VIB3Parameters, num> parameters) async {
     final jsObject = <String, dynamic>{};
 
     for (final entry in parameters.entries) {
@@ -154,8 +154,6 @@ class WebGLBridge {
         return 'uIntensity';
 
       // Effects
-      case VIB3Parameters.cardBendAmount:
-        return 'uCardBendAmount';
       case VIB3Parameters.perspectiveFOV:
         return 'uPerspectiveFOV';
       case VIB3Parameters.bloom:

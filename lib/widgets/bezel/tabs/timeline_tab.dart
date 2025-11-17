@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../utils/vib3_colors.dart';
 import '../../../utils/vib3_theme.dart';
+import '../../../models/timeline.dart';
 import '../../../providers/timeline_provider.dart';
 
 class TimelineTab extends ConsumerWidget {
@@ -80,7 +81,7 @@ class TimelineTab extends ConsumerWidget {
                   : Colors.white38,
             ),
             onPressed: () {
-              ref.read(timelineProvider.notifier).toggleLooping();
+              ref.read(timelineProvider.notifier).toggleLoop();
             },
           ),
         ],
@@ -104,7 +105,7 @@ class TimelineTab extends ConsumerWidget {
               ),
               Spacer(),
               Text(
-                '${timelineState.playhead.toStringAsFixed(2)}s / ${timelineState.duration.toStringAsFixed(0)}s',
+                '${timelineState.playheadPosition.toStringAsFixed(2)}s / ${timelineState.totalDuration.toStringAsFixed(0)}s',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
@@ -124,7 +125,7 @@ class TimelineTab extends ConsumerWidget {
                 ),
               ),
               FractionallySizedBox(
-                widthFactor: timelineState.playhead / timelineState.duration,
+                widthFactor: timelineState.playheadPosition / timelineState.totalDuration,
                 child: Container(
                   height: 8,
                   decoration: BoxDecoration(
@@ -144,7 +145,7 @@ class TimelineTab extends ConsumerWidget {
               ),
               SizedBox(width: 16),
               Text(
-                'Time Sig: ${timelineState.timeSignatureBeats}/${timelineState.timeSignatureNote}',
+                'Time Sig: ${_formatTimeSignature(timelineState.timeSignature)}',
                 style: TextStyle(fontSize: 9, color: Colors.white54),
               ),
               Spacer(),
@@ -219,9 +220,9 @@ class TimelineTab extends ConsumerWidget {
                       child: Row(
                         children: [
                           Icon(
-                            track.enabled ? Icons.check_circle : Icons.circle_outlined,
+                            !track.isMuted ? Icons.check_circle : Icons.circle_outlined,
                             size: 12,
-                            color: track.enabled
+                            color: !track.isMuted
                                 ? VIB3CategoryColors.timeline
                                 : Colors.white38,
                           ),
@@ -240,5 +241,18 @@ class TimelineTab extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _formatTimeSignature(TimeSignature sig) {
+    switch (sig) {
+      case TimeSignature.fourFour:
+        return '4/4';
+      case TimeSignature.threeFour:
+        return '3/4';
+      case TimeSignature.sixEight:
+        return '6/8';
+      case TimeSignature.sevenEight:
+        return '7/8';
+    }
   }
 }

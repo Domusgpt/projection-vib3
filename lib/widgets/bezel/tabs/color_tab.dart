@@ -82,10 +82,9 @@ class ColorTab extends ConsumerWidget {
               aspectRatio: 1.0,
               child: GestureDetector(
                 onPanUpdate: (details) {
-                  final RenderBox box = details.localPosition as RenderBox? != null
-                      ? context.findRenderObject() as RenderBox
-                      : context.findRenderObject() as RenderBox;
                   // TODO: Calculate hue/saturation from touch position
+                  // final RenderBox box = context.findRenderObject() as RenderBox;
+                  // final Offset localPosition = details.localPosition;
                 },
                 child: CustomPaint(
                   painter: ColorWheelPainter(

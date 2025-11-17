@@ -95,7 +95,7 @@ class CameraTab extends ConsumerWidget {
                 'Rail 3',
                 cameraState.activePreset == CameraPreset.cinematicRail3,
                 () {
-                  ref.read(cameraProvider.notifier).setPreset(CameraPreset.cinematicRail3),
+                  ref.read(cameraProvider.notifier).setPreset(CameraPreset.cinematicRail3);
                 },
               ),
             ],
