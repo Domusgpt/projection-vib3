@@ -75,8 +75,13 @@ class BezelTabBar extends StatelessWidget {
           final isActive = expandedTab == category;
           return Expanded(
             child: GestureDetector(
-              onTap: () => onTabTapped(category),
-              child: Container(
+              onTap: () {
+                VIB3Haptics.selection();
+                onTabTapped(category);
+              },
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
                 decoration: BoxDecoration(
                   color: isActive
                       ? category.color.withOpacity(0.3)
@@ -91,10 +96,14 @@ class BezelTabBar extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      category.icon,
-                      size: 18,
-                      color: isActive ? category.color : Colors.white70,
+                    AnimatedScale(
+                      scale: isActive ? 1.1 : 1.0,
+                      duration: Duration(milliseconds: 200),
+                      child: Icon(
+                        category.icon,
+                        size: 18,
+                        color: isActive ? category.color : Colors.white70,
+                      ),
                     ),
                     SizedBox(height: 2),
                     Text(
