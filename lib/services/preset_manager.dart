@@ -2,19 +2,43 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/preset.dart';
 import '../models/vib3_parameters.dart';
 
-/// Manages preset storage and retrieval using Hive with JSON
+/// Manages preset storage and retrieval using Hive with JSON (Singleton pattern)
 class PresetManager {
   static const String _boxName = 'vib3_presets';
+  static PresetManager? _instance;
+  static bool _isInitialized = false;
+
   Box? _presetsBox;
 
-  /// Initialize Hive and open preset box
-  Future<void> init() async {
-    await Hive.initFlutter();
-    _presetsBox = await Hive.openBox(_boxName);
+  // Private constructor for singleton
+  PresetManager._();
 
-    // Create default presets if box is empty
-    if (_presetsBox!.isEmpty) {
-      await _createDefaultPresets();
+  /// Get singleton instance
+  factory PresetManager() {
+    _instance ??= PresetManager._();
+    return _instance!;
+  }
+
+  /// Initialize Hive and open preset box (only once)
+  Future<void> init() async {
+    if (_isInitialized && _presetsBox != null && _presetsBox!.isOpen) {
+      print('✅ PresetManager already initialized');
+      return;
+    }
+
+    if (!_isInitialized) {
+      await Hive.initFlutter();
+      _isInitialized = true;
+    }
+
+    if (_presetsBox == null || !_presetsBox!.isOpen) {
+      _presetsBox = await Hive.openBox(_boxName);
+      print('✅ PresetManager initialized with ${_presetsBox!.length} presets');
+
+      // Create default presets if box is empty
+      if (_presetsBox!.isEmpty) {
+        await _createDefaultPresets();
+      }
     }
   }
 

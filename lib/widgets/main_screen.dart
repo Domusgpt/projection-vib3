@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/vib3_colors.dart';
@@ -24,6 +25,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
     with TickerProviderStateMixin {
   int _fingerCount = 0;
   VIB3ControlCategory? _expandedTab;
+  Timer? _updateTimer;
 
   @override
   void initState() {
@@ -33,28 +35,21 @@ class _MainScreenState extends ConsumerState<MainScreen>
   }
 
   void _startUpdateLoops() {
-    // Update at 60 FPS
-    Future.doWhile(() async {
-      await Future.delayed(Duration(milliseconds: 16));
-      if (mounted) {
-        // Update audio engine
-        // ref.read(audioProvider.notifier) is already self-updating
+    // Update at 60 FPS using Timer.periodic (properly cancellable)
+    _updateTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      if (!mounted) return;
 
-        // Update camera
-        ref.read(cameraProvider.notifier).update(0.016);
+      // Update camera
+      ref.read(cameraProvider.notifier).update(0.016);
 
-        // Update palette orbit
-        ref.read(paletteProvider.notifier).update(0.016);
+      // Update palette orbit
+      ref.read(paletteProvider.notifier).update(0.016);
 
-        // Update lighting (audio-reactive)
-        ref.read(lightingProvider.notifier).update();
+      // Update lighting (audio-reactive)
+      ref.read(lightingProvider.notifier).update();
 
-        // Update macros (audio-reactive)
-        ref.read(macroProvider.notifier).update();
-
-        return true;
-      }
-      return false;
+      // Update macros (audio-reactive)
+      ref.read(macroProvider.notifier).update();
     });
   }
 
@@ -197,5 +192,13 @@ class _MainScreenState extends ConsumerState<MainScreen>
       padding: EdgeInsets.all(4),
       child: Icon(icon, size: 20, color: color),
     );
+  }
+
+  @override
+  void dispose() {
+    print('🧹 Disposing MainScreen - cancelling update timer');
+    _updateTimer?.cancel();
+    _updateTimer = null;
+    super.dispose();
   }
 }
